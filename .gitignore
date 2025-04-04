@@ -1,0 +1,8 @@
+# Ignore everything
+*
+
+# Un-ignore the .gitignore file itself
+!.gitignore
+
+# Un-ignore the "R Script" file
+!*.R
