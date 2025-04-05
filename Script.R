@@ -1,6 +1,6 @@
 # (i) Create a sub-sample of 400 observations
-#install.packages(c("tidyverse","moments","ggpubr"))  #De-comment the code to install
-library("tidyverse"); library(moments); library(ggpubr)
+#install.packages(c("tidyverse","moments","ggpubr", "factoextra"))  #De-comment the code to install
+library("tidyverse"); library(moments); library(ggpubr); library(factoextra)
 
 #You may need to change/include the path of your working directory
 
@@ -83,7 +83,51 @@ round(pca.df$rotation[,1:3], 3)
 #     - Average.Attacker.Payload.Entropy.Bits (0.483)
 #     - Individual.URLs.requested (0.581)
 
+# ===================================================================
+# (vi) PCA - Biplot
+fviz_pca_biplot(pca.df,
+                axes = c(1,2), #Specifying the PCs to be plotted.
+                #Parameters for samples
+                col.ind=df$APT, #Outline colour of the shape
+                fill.ind=df$APT, #fill colour of the shape
+                alpha=0.5, #transparency of the fill colour
+                pointsize=4, #Size of the shape
+                pointshape=21, #Type of Shape
+                #Parameter for variables
+                col.var="red", #Colour of the variable labels
+                label="var", #Show the labels for the variables only
+                repel=TRUE, #Avoid label overplotting
+                addEllipses=TRUE, #Add ellipses to the plot
+                legend.title=list(colour="APT",fill="APT",alpha="APT"))
 
+# PCA PLOT:
+# **********************
+# There is significant overlap between APT and non-APT groups.
+# However, there are still some visible clusters of APT activity toward the left and upper-left quadrants, suggesting some separation may exist along certain directions.
+# Most red dots are grouped between -2.5 and 2.5 on the x-axis. 
+# In contrast, blue dots are more spread out, ranging from around -5.0 to 3.75.
+
+# LOADING PLOTS:
+# ***********************
+# The loading plot shows that variables such as (ARSB), (AWS), (APV), and (APTAIM) have long vectors, indicating they are more important contributors to PC1 and PC2. 
+# ARSB, AWS, and (AAPEB) are close together and form a tight angle, suggesting they are positively correlated. 
+# Similarly, APV and APTAIM also form a small angle, meaning they are highly and positively correlated. 
+# However, both APV and APTAIM meet Hits at approximately 90 degrees, indicating no correlation between them. 
+# Likewise, ARSB, AWS, and AAPEB form a 90 degree angle with (ASIAC), showing they are uncorrelated. 
+# APV and APTAIM form an angle greater than 90 degrees with Hits, suggesting a negative correlation. 
+# They are also slightly and negatively correlated with ASIAC, as the angle between them is slightly more than 90 degrees.
+
+# PCA + LOADING PLOTS:
+# *************************
+# Samples in the same direction as (ARSB), (AWS), and (APV) tend to have higher values in these features compared to those on the opposite side. 
+# Likewise, individuals aligned with the direction of (Hits) generally have higher values for that variable. 
+# Similarly, samples positioned in the same direction as (APV) and (APTAIM) show higher values for these features than those located in the opposite direction.
+
+# Features that help distinguish APT activity
+# *********************************
+# Average.Request.Size.Bytes: Long arrow pointing toward APT cluster. Suggests APTs involve larger requests.
+# Attack.Window.Seconds     : Indicates more prolonged or persistent attacks—consistent with APT behavior.
+# Average.Attacker.Payload.Entropy.Bits: High entropy suggests obfuscation/encryption, typical of APTs.
 
 # ===================================================================
 
