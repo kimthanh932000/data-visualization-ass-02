@@ -36,11 +36,11 @@ df <- mydata[,c("Hits",
 # Remove "IP.Range.Trust.Score" from further analysis
 df$IP.Range.Trust.Score <- NULL
 
-# Mask negative value in "Attack.Source.IP.Address"
+# Mask negative value (-1) in "Attack.Source.IP.Address"
 df$Attack.Source.IP.Address.Count[df$Attack.Source.IP.Address.Count < 0] <- NA
 
 # Mask extreme value (99999) in "Average.ping.to.attacking.IP.milliseconds"
-df$Average.ping.to.attacking.IP.milliseconds[df$Average.ping.to.attacking.IP.milliseconds = 99999] <- NA
+df$Average.ping.to.attacking.IP.milliseconds[df$Average.ping.to.attacking.IP.milliseconds == 99999] <- NA
 
 # Apply log-transformation on "Average.ping.to.attacking.IP.milliseconds"
 df$Average.ping.to.attacking.IP.milliseconds <- log(df$Average.ping.to.attacking.IP.milliseconds)
@@ -131,10 +131,53 @@ fviz_pca_biplot(pca.df,
 # ARSB = Average.Request.Size.Bytes
 # AWS = Attack.Window.Seconds
 # AAPEB = Average.Attacker.Payload.Entropy.Bits
+# APTAIM = Average.ping.to.attacking.IP.milliseconds
+# APV = Average.ping.variability
 
 # => Pointing left, toward the region where the APT (blue) points are more concentrated.
-# => That means higher values in these features are associated more with APT activity
-
+# => That means higher values in these features are associated more with APT activities
 
 # ===================================================================
+# (vii) 
+
+# Project PC1 scores onto x-axis
+pc1.score.df <- data.frame(PC1=pca.df$x[, 1], APT=df$APT)
+
+ggplot(pc1.score.df,aes(x=PC1,y=0))+
+  geom_point(aes(colour=APT),alpha=0.8,size=4)+
+  theme_minimal(base_size=14)+
+  theme(legend.position = "top")+
+  xlab("PC1");
+
+# Project PC2 scores onto y-axis
+pc2.score.df <- data.frame(PC2=pca.df$x[, 2], APT=df$APT)
+
+ggplot(pc2.score.df,aes(x=0,y=PC2))+
+  geom_point(aes(colour=APT),alpha=0.8,size=4)+
+  theme_minimal(base_size=14)+
+  theme(legend.position = "top")+
+  ylab("PC2");
+
+# => PC1 is more helpful in classifying APT vs. non-APT.
+
+# x-axis: Some separation between the red and blue points is visible, especially towards the left side.
+
+# y-axis: Red and blue points are heavily overlapped, showing no clear separation between APT and non-APT cases.
+
+# Key drivers for PC1 (absolute loading > 0.3)
+#Average.Request.Size.Bytes	(-0.544)	
+#Attack.Window.Seconds	(-0.526)	
+#Average.Attacker.Payload.Entropy.Bits	(-0.345)	
+#Average.ping.to.attacking.IP.milliseconds	(-0.358)	
+#Average.ping.variability (-0.398)
+
+
+
+
+
+
+
+
+
+
 
