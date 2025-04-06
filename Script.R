@@ -42,11 +42,10 @@ df$Attack.Source.IP.Address.Count[df$Attack.Source.IP.Address.Count < 0] <- NA
 # Mask extreme value (99999) in "Average.ping.to.attacking.IP.milliseconds"
 df$Average.ping.to.attacking.IP.milliseconds[df$Average.ping.to.attacking.IP.milliseconds == 99999] <- NA
 
-# Apply log-transformation on "Average.ping.to.attacking.IP.milliseconds"
-df$Average.ping.to.attacking.IP.milliseconds <- log(df$Average.ping.to.attacking.IP.milliseconds)
-
-# Apply log-transformation on "Average.ping.variability"
-df$Average.ping.variability <- log(df$Average.ping.variability)
+# Apply log-transformation
+for (col in c("Average.ping.to.attacking.IP.milliseconds", "Average.ping.variability")) {
+  df[[col]] <- log(df[[col]])
+}
 
 # =====================================================================
 # (iv) Remove incomplete cases
