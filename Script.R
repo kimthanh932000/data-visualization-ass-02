@@ -36,15 +36,16 @@ df <- mydata[,c("Hits",
 # Remove "IP.Range.Trust.Score" from further analysis
 df$IP.Range.Trust.Score <- NULL
 
-# Filter out rows that contain negative value for "Attack.Source.IP.Address"
-df <- df[df$Attack.Source.IP.Address.Count >= 0, ]
+# Mask negative value in "Attack.Source.IP.Address"
+df$Attack.Source.IP.Address.Count[df$Attack.Source.IP.Address.Count < 0] <- NA
 
-# Remove the max value of 99999 from "Average.ping.to.attacking.IP.milliseconds"
-df <- df[df$Average.ping.to.attacking.IP.milliseconds != 99999, ]
+# Mask extreme value (99999) in "Average.ping.to.attacking.IP.milliseconds"
+df$Average.ping.to.attacking.IP.milliseconds[df$Average.ping.to.attacking.IP.milliseconds = 99999] <- NA
 
 # Apply log-transformation on "Average.ping.to.attacking.IP.milliseconds"
-# and "Average.ping.variability"
 df$Average.ping.to.attacking.IP.milliseconds <- log(df$Average.ping.to.attacking.IP.milliseconds)
+
+# Apply log-transformation on "Average.ping.variability"
 df$Average.ping.variability <- log(df$Average.ping.variability)
 
 # =====================================================================
@@ -59,29 +60,28 @@ pca.df <- prcomp(df[,c(1:8)], scale=TRUE)
 
 
 # Q: Why data should be standardised when performing PCA?
-# A: PCA tends to give greater loadings to variables with large numeric range, leading to bias in PCA.
-#    That's why standardisation of variables is recommended.
+# A: PCA tends to give greater loadings to variables with large numeric range, leading to bias in results.
+#    That's why standardisation of features is recommended.
 
 # Display and describe the individual and cumulative proportions of variance
 round(summary(pca.df)$importance, 3)
 
-# To cover at least 50% of the total variance, PC1-PC3 are needed
-# Because their cumulative proportion is 60% (0.606)
+# So, by looking at the first 3 PCs, we can say they cover at least 50% of the total variance
+# Because their cumulative proportion is approximately 60% (0.594)
 
 # Display and interpret the coefficients for PC1, PC2 and PC3
 round(pca.df$rotation[,1:3], 3)
 
 # Key drivers:
 # PC1: 
-#     - Average.Request.Size.Bytes (0.544)
-#     - Attack.Window.Seconds (0.526)
+#     - Average.Request.Size.Bytes (-0.600) => negatively correlated
+#     - Attack.Window.Seconds (-0.567) => negatively correlated
 # PC2: 
-#     - Average.ping.to.attacking.IP.milliseconds (0.590)
-#     - Average.ping.variability (0.577)
+#     - Average.ping.to.attacking.IP.milliseconds (-0.638) => negatively correlated
+#     - Average.ping.variability (-0.642) => negatively correlated
 # PC3: 
-#     - Hits (0.542)
-#     - Average.Attacker.Payload.Entropy.Bits (0.483)
-#     - Individual.URLs.requested (0.581)
+#     - Hits (-0.558) => negatively correlated
+#     - Individual.URLs.requested (-0.583) => negatively correlated
 
 # ===================================================================
 # (vi) PCA - Biplot
@@ -103,46 +103,38 @@ fviz_pca_biplot(pca.df,
 # PCA PLOT:
 # **********************
 # There is significant overlap between APT and non-APT groups.
-# However, there are still some visible clusters of APT activity toward the left and upper-left quadrants, suggesting some separation may exist along certain directions.
-# Most red dots are grouped between -2.5 and 2.5 on the x-axis. 
-# In contrast, blue dots are more spread out, ranging from around -5.0 to 3.75.
+# However, there are still some visible blue dots toward the left, so we can still see some separation along this direction.
 
 # LOADING PLOTS:
 # ***********************
-# The loading plot shows that variables such as (ARSB), (AWS), (APV), and (APTAIM) have long vectors, indicating they are more important contributors to PC1 and PC2. 
-# ARSB, AWS, and (AAPEB) are close together and form a tight angle, suggesting they are positively correlated. 
-# Similarly, APV and APTAIM also form a small angle, meaning they are highly and positively correlated. 
-# However, both APV and APTAIM meet Hits at approximately 90 degrees, indicating no correlation between them. 
-# Likewise, ARSB, AWS, and AAPEB form a 90 degree angle with (ASIAC), showing they are uncorrelated. 
-# APV and APTAIM form an angle greater than 90 degrees with Hits, suggesting a negative correlation. 
-# They are also slightly and negatively correlated with ASIAC, as the angle between them is slightly more than 90 degrees.
+# The loading plot shows that variables such as (ARSB), (AWS), (APV), and (APTAIM) have long vectors, indicating they are more important contributors to PC1 and PC2.
+# (IUR), (ASIAC) and (Hits) => short => less contribute to the 2 PCs
+# (ARSB), (AWS), (AAPEB), (IUR) and (ASIAC) => less than 90 degree => positively correlated
+# Similarly, above 4 features => positively correlated with (APTAIM) and (APV)
+# On the other hand, (APTAIM) and (APV) are negatively correlated with (ASIAC)
+# Same thing for above 4 features with (Hits)
+# (APTAIM) and (APV) form a 90 degree with (Hits) => uncorrelated
 
 # PCA + LOADING PLOTS:
 # *************************
-# Samples in the same direction as (ARSB), (AWS), and (APV) tend to have higher values in these features compared to those on the opposite side. 
-# Likewise, individuals aligned with the direction of (Hits) generally have higher values for that variable. 
-# Similarly, samples positioned in the same direction as (APV) and (APTAIM) show higher values for these features than those located in the opposite direction.
+# ASIAC = Attack.Source.IP.Address.Count
+# IUR = Individual.URLs.requested
+# Hits = Hits
+# APTAIM = Average.ping.to.attacking.IP.milliseconds
+# APV = Average.ping.variability
 
-# Features that help distinguish APT activity
-# *********************************
-# Average.Request.Size.Bytes: Long arrow pointing toward APT cluster. Suggests APTs involve larger requests.
-# Attack.Window.Seconds     : Indicates more prolonged or persistent attacks—consistent with APT behavior.
-# Average.Attacker.Payload.Entropy.Bits: High entropy suggests obfuscation/encryption, typical of APTs.
+# => These features don’t show a strong directionality that differentiates the two groups (APT = Yes/No).
+# => Both clusters contain similar or mixed values for these features.
+# => It's hard to tell any differences from both groups based on these features
+
+# ******************************
+# ARSB = Average.Request.Size.Bytes
+# AWS = Attack.Window.Seconds
+# AAPEB = Average.Attacker.Payload.Entropy.Bits
+
+# => Pointing left, toward the region where the APT (blue) points are more concentrated.
+# => That means higher values in these features are associated more with APT activity
+
 
 # ===================================================================
-
-# ggplot(df,aes(x=Attack.Source.IP.Address.Count)) +
-#   geom_histogram() + #Histogram with default settings
-#   ylab("Frequency")
-# 
-# ggplot(df,aes(x=Average.ping.to.attacking.IP.milliseconds)) +
-#   geom_histogram() + #Histogram with default settings
-#   ylab("Frequency")
-# 
-# # boxplot(df$Average.ping.to.attacking.IP.milliseconds, main = "Boxplot of Log-Transformed Ping")
-# 
-# ggplot(df,aes(x=Average.ping.variability)) +
-#   geom_histogram() + #Histogram with default settings
-#   ylab("Frequency")
-
 
